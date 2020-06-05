@@ -71,3 +71,6 @@ class UNet3d(nn.Module):
         x = self.decoder(x, skips)
         x = self.segmenter(x)
         return x
+
+if __name__ == "__main":
+    unet = UNet3d()
