@@ -7,12 +7,14 @@ import sys
 
 from glob import glob
 from pathlib import Path
+from pytorch_lightning import Trainer
 from time import ctime
 from torch.nn import CrossEntropyLoss
 from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from warnings import filterwarnings
 
+from lightning import LightningUNet3d
 from model.unet import UNet3d
 from train.augment import compose_transforms
 from train.load import COMPUTE_CANADA, IN_COMPUTE_CAN_JOB, get_cc539_subjects
@@ -43,7 +45,13 @@ def test_unet():
     batch_size = 1
     channels = 1
     n_classes = 2
-    model = UNet3d()
+    model = UNet3d(initial_features=16)
+    print(f"{ctime()}:  Built U-Net.")
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"{ctime()}:  Total parameters: {total_params} ({trainable_params} trainable).")
+
+    model.half()
     model.cuda()
     criterion = CrossEntropyLoss()
     criterion.cuda()
@@ -60,18 +68,20 @@ def test_unet():
     filterwarnings("ignore", message="Image.*has negative values.*")
     for i, subjects_batch in enumerate(training_loader):
         print(f"{ctime()}:  Augmenting input...")
-        input = subjects_batch["img"][tio.DATA]
+        img = subjects_batch["img"][tio.DATA]
         print(f"{ctime()}:  Augmented input...")
         target = subjects_batch["label"][tio.DATA]
+        # if we are using half precision, must also half inputs
+        img.half()
+        target.half()
         # iF we don't convert inputs tensor to CUDA, we get an;
         #    "Could not run 'aten::slow_conv3d_forward' with arguments from the
         #    'CUDATensorId' backend. 'aten::slow_conv3d_forward' is only available
         #    for these backends: [CPUTensorId, VariableTensorId]
         #    error. If we do, we run out of memory (since inputs are freaking
         #    brains)
-
-        input = input.cuda()
-        x = F.interpolate(input, size=(80, 80, 80))
+        img = img.cuda()
+        x = F.interpolate(img, size=(90, 90, 90))
         print(f"{ctime()}:  Running model with batch of one brain...")
         out = model(x)
         print(f"{ctime()}:  Got output tensor from one brain...")
@@ -80,4 +90,14 @@ def test_unet():
         raise
 
 
-test_unet()
+def test_lightning():
+    filterwarnings("ignore", message="Image.*has negative values.*")
+    model = LightningUNet3d(initial_features=8)
+    # trainer = Trainer(amp_level="O1", precision=16, gpus=1)
+    trainer = Trainer(precision=16, fast_dev_run=True, log_gpu_memory=True, gpus=1)
+    trainer.fit(model)
+
+
+# test_unet()
+
+test_lightning()
