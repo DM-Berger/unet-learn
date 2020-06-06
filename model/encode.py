@@ -76,4 +76,5 @@ class Encoder(nn.Module):
         for i, encode in enumerate(self.blocks):
             x, skip = encode(x)
             skips.append(skip)
+        skips.reverse()  #
         return x, skips
