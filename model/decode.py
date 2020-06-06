@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from torch import Tensor
 from torch.nn import ConvTranspose3d as UpConv3d
@@ -30,10 +31,24 @@ class DecodeBlock(nn.Module):
     def forward(self, x: Tensor, skip: Tensor) -> Tensor:
         x = self.upconv(x)
         # remember, batch tensors are shape [B_size, Ch_size, <InputDims>]
-        x = torch.cat([x, skip], dim=1)  # concat along channel dimension
+        cropped = self.crop(x, skip)
+        x = torch.cat([cropped, x], dim=1)  # concat along channel dimension
         x = self.conv0(x)
         x = self.conv1(x)
         return x
+
+    def crop(self, x: Tensor, skip: Tensor) -> Tensor:
+        # (left, right, top, bottom, front, back) is F.pad order
+        # we are just implementing our own version of
+        # https://github.com/fepegar/unet/blob/9f64483d351b4f7d95c0d871aa7aa587b8fdb21b/unet/decoding.py#L142
+        # but fixing their bug which won't work for odd numbers
+        shape_diffs = torch.tensor(skip.shape)[2:] - torch.tensor(x.shape)[2:]
+        halfs = torch.true_divide(shape_diffs, 2)
+        halfs_left = -torch.floor(halfs).to(dtype=int)
+        halfs_right = -torch.ceil(halfs).to(dtype=int)
+        pads = torch.stack([halfs_left, halfs_right]).t().flatten().tolist()
+        cropped = F.pad(skip, pads)
+        return cropped
 
     @staticmethod
     def _in_out_channels(
@@ -65,7 +80,7 @@ class Decoder(nn.Module):
         self.features_out = encoder.features_out
 
         self.blocks = nn.ModuleList()
-        for depth in range(self.depth_):
+        for depth in reversed(range(self.depth_)):
             self.blocks.append(DecodeBlock(encoder, depth, normalization))
 
     def forward(self, x: Tensor, skips: List[Tensor]) -> Tensor:
