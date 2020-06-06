@@ -22,13 +22,16 @@ class ConvUnit(nn.Module):
         self, in_channels: int, out_channels: int, normalization: bool = True, kernel_size: int = 3
     ):
         super().__init__()
-        block = nn.ModuleList()
-        conv = Conv3d(in_channels, out_channels, kernel_size, padding=0)
-        gnorm = GroupNorm(num_groups=1, num_channels=out_channels)
-        act = ReLU(inplace=True)
-        block.extend([conv, gnorm, act])
-        self.block = nn.Sequential(*block)
+        # block = nn.ModuleList()
+        self.conv = Conv3d(in_channels, out_channels, kernel_size, padding=(kernel_size + 1) // 2)
+        self.gnorm = GroupNorm(num_groups=1, num_channels=out_channels)
+        self.act = ReLU(inplace=True)
+        # block.extend([conv, gnorm, act])
+        # self.block = nn.Sequential(block)
 
     def forward(self, x: Tensor) -> Tensor:
         # tensors just flow straight through these
-        return self.block(x)
+        x = self.conv(x)
+        x = self.gnorm(x)
+        x = self.act(x)
+        return x
