@@ -90,10 +90,3 @@ def compose_transforms() -> Compose:
     transform = Compose(preprocessors + augments)
     print(f"{ctime()}:  Transformations registered.")
     return transform
-
-
-print(f"{ctime()}:  Creating Dataset...")
-subj_dataset = tio.ImagesDataset(subjects, transform=transform)
-# batch size has to be 1 for variable-sized inputs
-print(f"{ctime()}:  Creating DataLoader...")
-training_loader = DataLoader(subj_dataset, batch_size=1, num_workers=8)

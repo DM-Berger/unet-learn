@@ -1,21 +1,13 @@
 import torch
 import torch.nn as nn
 
-from collections import OrderedDict
 from torch import Tensor
-from torch.nn import (
-    BatchNorm3d,
-    Conv3d,
-    ConvTranspose3d as UpConv3d,
-    GroupNorm3d,
-    MaxPool3d,
-    ReLU,
-    Sequential,
-)
-from typing import Dict, List, Optional, Tuple, Union
+from torch.nn import ConvTranspose3d as UpConv3d
+from typing import Dict, List, Tuple
 
 from model.conv import ConvUnit
-from model.encode import EncodeBlock, Encoder
+from model.encode import Encoder
+
 
 class DecodeBlock(nn.Module):
     """The upsampling layer, followed by two ConvUnits, the first of which takes

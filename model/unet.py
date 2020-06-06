@@ -58,6 +58,7 @@ class UNet3d(nn.Module):
         depth: int = 3,
         normalization: bool = True,
     ):
+        super().__init__()
         self.encoder = Encoder(initial_features, depth, normalization)
         self.joiner = JoinBlock(self.encoder, normalization)
         self.decoder = Decoder(self.encoder, normalization)
@@ -71,6 +72,3 @@ class UNet3d(nn.Module):
         x = self.decoder(x, skips)
         x = self.segmenter(x)
         return x
-
-if __name__ == "__main":
-    unet = UNet3d()

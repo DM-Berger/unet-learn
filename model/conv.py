@@ -7,7 +7,7 @@ from torch.nn import (
     BatchNorm3d,
     Conv3d,
     ConvTranspose3d as UpConv3d,
-    GroupNorm3d,
+    GroupNorm,
     MaxPool3d,
     ReLU,
     Sequential,
@@ -24,7 +24,7 @@ class ConvUnit(nn.Module):
         super().__init__()
         block = nn.ModuleList()
         conv = Conv3d(in_channels, out_channels, kernel_size, padding=0)
-        gnorm = GroupNorm3d(out_channels)
+        gnorm = GroupNorm(num_groups=1, num_channels=out_channels)
         act = ReLU(inplace=True)
         block.extend([conv, gnorm, act])
         self.block = nn.Sequential(*block)

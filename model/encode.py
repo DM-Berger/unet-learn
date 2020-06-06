@@ -1,18 +1,8 @@
-import torch
 import torch.nn as nn
 
-from collections import OrderedDict
 from torch import Tensor
-from torch.nn import (
-    BatchNorm3d,
-    Conv3d,
-    ConvTranspose3d as UpConv3d,
-    GroupNorm3d,
-    MaxPool3d,
-    ReLU,
-    Sequential,
-)
-from typing import Dict, List, Optional, Tuple, Union
+from torch.nn import MaxPool3d
+from typing import Dict, List, Tuple
 
 from model.conv import ConvUnit
 
@@ -30,7 +20,7 @@ class EncodeBlock(nn.Module):
             in_channels=inch[0], out_channels=ouch[0], normalization=norm_first, kernel_size=3
         )
         self.conv1 = ConvUnit(
-            in_channels=inch[1], out_channels=ouch[2], normalization=normalization, kernel_size=3
+            in_channels=inch[1], out_channels=ouch[1], normalization=normalization, kernel_size=3
         )
         self.pool = MaxPool3d(kernel_size=2, stride=2)
 
@@ -78,11 +68,12 @@ class Encoder(nn.Module):
 
         for d in range(depth):
             self.blocks.append(
-                EncodingBlock(features_out=f, depth=d, normalization=True, is_input=(d == 0))
+                EncodeBlock(features_out=f, depth=d, normalization=True, is_input=(d == 0))
             )
 
     def forward(self, x: Tensor) -> Tuple[Tensor, List[Tensor]]:
         skips: List[Tensor] = []
         for i, encode in enumerate(self.blocks):
-            x, skips[i] = encode(x)
+            x, skip = encode(x)
+            skips.append(skip)
         return x, skips
