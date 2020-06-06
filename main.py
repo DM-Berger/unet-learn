@@ -1,6 +1,7 @@
 import nibabel as nib
 import os
 import torch
+import torch.nn.functional as F
 import torchio as tio
 import sys
 
@@ -58,11 +59,21 @@ def test_unet():
 
     filterwarnings("ignore", message="Image.*has negative values.*")
     for i, subjects_batch in enumerate(training_loader):
-        inputs = subjects_batch["img"][tio.DATA]
+        print(f"{ctime()}:  Augmenting input...")
+        input = subjects_batch["img"][tio.DATA]
+        print(f"{ctime()}:  Augmented input...")
         target = subjects_batch["label"][tio.DATA]
-        inputs = inputs.cuda()
+        # iF we don't convert inputs tensor to CUDA, we get an;
+        #    "Could not run 'aten::slow_conv3d_forward' with arguments from the
+        #    'CUDATensorId' backend. 'aten::slow_conv3d_forward' is only available
+        #    for these backends: [CPUTensorId, VariableTensorId]
+        #    error. If we do, we run out of memory (since inputs are freaking
+        #    brains)
+
+        input = input.cuda()
+        x = F.interpolate(input, size=(80, 80, 80))
         print(f"{ctime()}:  Running model with batch of one brain...")
-        out = model(inputs)
+        out = model(x)
         print(f"{ctime()}:  Got output tensor from one brain...")
         loss = criterion(out, target)
         print(f"{ctime()}:  Computed loss for batch size of 1 brain...")
