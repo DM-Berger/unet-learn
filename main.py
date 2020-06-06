@@ -43,12 +43,30 @@ def test_unet():
     channels = 1
     n_classes = 2
     model = UNet3d()
+    model.cuda()
     criterion = CrossEntropyLoss()
+    criterion.cuda()
 
-    x = torch.randn(1, 1, 128, 128, 64)
-    y = torch.empty(1, 128, 128, 64, dtype=torch.long).random_(n_classes)
-    out = model(x)
-    loss = criterion(out)
+    print(f"{ctime()}:  Creating Dataset...")
+    subjects = get_cc539_subjects()
+    transform = compose_transforms()
+    subj_dataset = tio.ImagesDataset(subjects, transform=transform)
+    # batch size has to be 1 for variable-sized inputs
+    print(f"{ctime()}:  Creating DataLoader...")
+    training_loader = DataLoader(subj_dataset, batch_size=1, num_workers=8)
+    print(f"{ctime()}:  Created DataLoader...")
+
+    filterwarnings("ignore", message="Image.*has negative values.*")
+    for i, subjects_batch in enumerate(training_loader):
+        inputs = subjects_batch["img"][tio.DATA]
+        target = subjects_batch["label"][tio.DATA]
+        inputs = inputs.cuda()
+        print(f"{ctime()}:  Running model with batch of one brain...")
+        out = model(inputs)
+        print(f"{ctime()}:  Got output tensor from one brain...")
+        loss = criterion(out, target)
+        print(f"{ctime()}:  Computed loss for batch size of 1 brain...")
+        raise
 
 
 test_unet()

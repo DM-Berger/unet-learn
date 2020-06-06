@@ -21,7 +21,7 @@ if TMP:  # means we are runnign inside a job script, can run full
     COMPUTE_CANADA = True
     IN_COMPUTE_CAN_JOB = True
 
-CC539_DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
+CC539_DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
 CC539_IMGS = CC539_DATA_ROOT / "images"
 CC539_MASKS = CC539_DATA_ROOT / "masks"
 
