@@ -7,13 +7,14 @@ import sys
 
 from glob import glob
 from pathlib import Path
-from pytorch_lightning import Trainer
+from pytorch_lightning import loggers, Trainer
 from time import ctime
 from torch.nn import CrossEntropyLoss
 from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from warnings import filterwarnings
 
+from args import get_args
 from lightning import LightningUNet3d
 from model.unet import UNet3d
 from train.augment import compose_transforms
@@ -39,8 +40,8 @@ def test() -> None:
                 sys.exit(0)
 
 
-def test_unet():
-    EPOCHS = 100
+def test_unet() -> None:
+
     LEARN_RATE = 1e-4
     batch_size = 1
     channels = 1
@@ -90,13 +91,29 @@ def test_unet():
         raise
 
 
-def test_lightning():
+def test_lightning() -> None:
+    args = get_args()
+
+    EPOCHS_MIN = args["epochs_min"]
+    EPOCHS_MAX = args["epochs_max"]
+    GPUS = args["gpus"]
+    LOGS = args["logs"]
+    IS_DEV = args["devrun"]
+    IS_OVERFIT = args["overfit"]
+
     filterwarnings("ignore", message="Image.*has negative values.*")
     model = LightningUNet3d(initial_features=8, depth=3, n_labels=1, batch_size=1)
     # trainer = Trainer(amp_level="O1", precision=16, fast_dev_run=True, gpus=1,
     # min_epochs=20)
     # trainer = Trainer(fast_dev_run=True, gpus=1, min_epochs=20)
-    trainer = Trainer(gpus=1, min_epochs=5)
+    trainer = Trainer(
+        gpus=GPUS,
+        min_epochs=EPOCHS_MIN,
+        max_epochs=EPOCHS_MAX,
+        fast_dev_run=IS_DEV,
+        overfit_pct=0.01 if IS_OVERFIT else 0.0,
+    )
+    logger = loggers.TensorBoardLogger("logs/")
     trainer.fit(model)
 
 
