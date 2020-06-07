@@ -92,11 +92,11 @@ def test_unet():
 
 def test_lightning():
     filterwarnings("ignore", message="Image.*has negative values.*")
-    model = LightningUNet3d(initial_features=8, depth=3, n_labels=1)
+    model = LightningUNet3d(initial_features=8, depth=3, n_labels=1, batch_size=1)
     # trainer = Trainer(amp_level="O1", precision=16, fast_dev_run=True, gpus=1,
     # min_epochs=20)
     # trainer = Trainer(fast_dev_run=True, gpus=1, min_epochs=20)
-    trainer = Trainer(gpus=1, min_epochs=20)
+    trainer = Trainer(gpus=1, min_epochs=5)
     trainer.fit(model)
 
 

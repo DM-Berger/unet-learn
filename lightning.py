@@ -27,11 +27,13 @@ class LightningUNet3d(LightningModule):
         depth: int = 3,
         n_labels: int = 2,
         normalization: bool = True,
+        batch_size: int = 1,
     ):
         super().__init__()
         self.unet = UNet3d(
             initial_features, depth=depth, n_labels=n_labels, normalization=normalization
         )
+        self.batch_size = batch_size
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet.forward(x)
@@ -55,7 +57,7 @@ class LightningUNet3d(LightningModule):
         transform = compose_transforms()
         subj_dataset = tio.ImagesDataset(subjects, transform=transform)
         print(f"{ctime()}:  Creating DataLoader...")
-        training_loader = DataLoader(subj_dataset, batch_size=1, num_workers=8)
+        training_loader = DataLoader(subj_dataset, batch_size=self.batch_size, num_workers=8)
         return training_loader
 
     def prepare_data(self):
