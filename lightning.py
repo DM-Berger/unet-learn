@@ -21,20 +21,28 @@ from train.load import COMPUTE_CANADA, IN_COMPUTE_CAN_JOB, get_cc539_subjects
 
 
 class LightningUNet3d(LightningModule):
-    def __init__(self, initial_features: int = 32, depth: int = 3, normalization: bool = True):
+    def __init__(
+        self,
+        initial_features: int = 32,
+        depth: int = 3,
+        n_labels: int = 2,
+        normalization: bool = True,
+    ):
         super().__init__()
-        self.unet = UNet3d(initial_features, depth, normalization)
+        self.unet = UNet3d(
+            initial_features, depth=depth, n_labels=n_labels, normalization=normalization
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet.forward(x)
 
     def training_step(self, batch, batch_idx):
-        print(f"{ctime()}:  Augmenting input...")
         x = batch["img"][tio.DATA]
-        print(f"{ctime()}:  Augmented input...")
+        x = F.interpolate(x, size=(128, 128, 128))
         y = batch["label"][tio.DATA]
-        y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
+        target = F.interpolate(y, size=(128, 128, 128))
+        prediction = self(x)
+        loss = F.binary_cross_entropy_with_logits(prediction, target)
         tensorboard_logs = {"train_loss": loss}
         return {"loss": loss, "log": tensorboard_logs}
 
