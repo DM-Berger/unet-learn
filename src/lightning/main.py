@@ -45,7 +45,8 @@ class LightningUNet3d(LightningModule):
         target = batch["label"][tio.DATA]
         target = F.interpolate(target, size=(128, 128, 128))
         prediction = self(img)
-        visualize(img, target, prediction)
+        if int(batch_idx) % 50 == 0:
+            visualize(img, target, prediction)
         loss = F.binary_cross_entropy_with_logits(prediction, target)
         tensorboard_logs = {"train_loss": loss}
         return {"loss": loss, "log": tensorboard_logs}
