@@ -29,12 +29,14 @@ class LightningUNet3d(LightningModule):
         n_labels: int = 2,
         normalization: bool = True,
         batch_size: int = 1,
+        show_plots: bool = False
     ):
         super().__init__()
         self.unet = UNet3d(
             initial_features, depth=depth, n_labels=n_labels, normalization=normalization
         )
         self.batch_size = batch_size
+        self.show_plots = show_plots
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet.forward(x)
@@ -45,7 +47,7 @@ class LightningUNet3d(LightningModule):
         target = batch["label"][tio.DATA]
         target = F.interpolate(target, size=(128, 128, 128))
         prediction = self(img)
-        if int(batch_idx) % 50 == 0:
+        if self.show_plots and int(batch_idx) % 125 == 0:
             visualize(img, target, prediction)
         loss = F.binary_cross_entropy_with_logits(prediction, target)
         tensorboard_logs = {"train_loss": loss}

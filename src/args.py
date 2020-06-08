@@ -48,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--overfit", action="store_true")
     parser.add_argument("--devrun", action="store_true")
     parser.add_argument("--local", action="store_true")
+    parser.add_argument("--plot", action="store_true")
     return parser
 
 
@@ -70,4 +71,5 @@ def get_args() -> Dict[str, Any]:
         "epochs_max": delist(args.epochs_max),
         "resume": delist(args.resume),
         "checkdir": delist(args.checkdir),
+        "plots": delist(args.plot)
     }
