@@ -116,7 +116,7 @@ def test_lightning() -> None:
     # trainer = Trainer(amp_level="O1", precision=16, fast_dev_run=True, gpus=1,
     # min_epochs=20)
     if LOCAL:
-        trainer = Trainer(fast_dev_run=True, gpus=1, min_epochs=5, callbacks=callbacks)
+        trainer = Trainer(fast_dev_run=IS_DEV, gpus=1, min_epochs=5, callbacks=callbacks)
     else:
         trainer = Trainer(
             gpus=GPUS,

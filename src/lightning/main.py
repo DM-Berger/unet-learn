@@ -15,6 +15,7 @@ from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from warnings import filterwarnings
 
+from lightning.log import visualize
 from model.unet import UNet3d
 from train.augment import compose_transforms
 from train.load import COMPUTE_CANADA, IN_COMPUTE_CAN_JOB, get_cc539_subjects
@@ -39,17 +40,18 @@ class LightningUNet3d(LightningModule):
         return self.unet.forward(x)
 
     def training_step(self, batch, batch_idx):
-        x = batch["img"][tio.DATA]
-        x = F.interpolate(x, size=(128, 128, 128))
-        y = batch["label"][tio.DATA]
-        target = F.interpolate(y, size=(128, 128, 128))
-        prediction = self(x)
+        img = batch["img"][tio.DATA]
+        img = F.interpolate(img, size=(128, 128, 128))
+        target = batch["label"][tio.DATA]
+        target = F.interpolate(target, size=(128, 128, 128))
+        prediction = self(img)
+        visualize(img, target, prediction)
         loss = F.binary_cross_entropy_with_logits(prediction, target)
         tensorboard_logs = {"train_loss": loss}
         return {"loss": loss, "log": tensorboard_logs}
 
     def configure_optimizers(self):
-        return torch.optim.RMSprop(self.parameters(), lr=0.001)
+        return torch.optim.Adam(self.parameters(), lr=0.001)
 
     def train_dataloader(self):
         print(f"{ctime()}:  Creating Dataset...")
