@@ -103,11 +103,14 @@ def test_lightning() -> None:
     IS_DEV = args["devrun"]
     IS_OVERFIT = args["overfit"]
     LOCAL = args["local"]
+    SHOW_PLOTS = False if not LOCAL else args["plot"]
     CHECKDIR = Path() if LOCAL else args["checkdir"]
     CHECKPOINT = args["resume"]
 
     filterwarnings("ignore", message="Image.*has negative values.*")
-    model = LightningUNet3d(initial_features=8, depth=3, n_labels=1, batch_size=1)
+    model = LightningUNet3d(
+        initial_features=8, depth=3, n_labels=1, batch_size=1, show_plots=SHOW_PLOTS
+    )
     # https://www.tensorflow.org/api_docs/python/tf/summary
     # **kwargs for SummarWriter constructor defined at
     # https://www.tensorflow.org/api_docs/python/tf/summary/create_file_writer

@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from torch import Tensor
-from torch.nn import Conv3d
+from torch.nn import Conv3d, Sigmoid
 
 from model.conv import ConvUnit
 from model.encode import Encoder
@@ -62,13 +62,13 @@ class UNet3d(nn.Module):
         self.encoder = Encoder(initial_features, depth, normalization)
         self.joiner = JoinBlock(self.encoder, normalization)
         self.decoder = Decoder(self.encoder, normalization)
-        self.segmenter = Conv3d(
-            in_channels=2 * initial_features, out_channels=n_labels, kernel_size=1, stride=1
-        )
+        self.segmenter = Conv3d(in_channels=2 * initial_features, out_channels=n_labels, kernel_size=1, stride=1)
+        self.sigmoid = Sigmoid()
 
     def forward(self, x: Tensor) -> Tensor:
         x, skips = self.encoder(x)
         x = self.joiner(x)
         x = self.decoder(x, skips)
         x = self.segmenter(x)
+        x = self.sigmoid(x)
         return x

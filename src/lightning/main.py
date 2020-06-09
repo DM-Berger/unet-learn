@@ -15,7 +15,7 @@ from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from warnings import filterwarnings
 
-from lightning.log import visualize
+from lightning.log import BrainSlices
 from model.unet import UNet3d
 from train.augment import compose_transforms
 from train.load import COMPUTE_CANADA, IN_COMPUTE_CAN_JOB, get_cc539_subjects
@@ -29,12 +29,10 @@ class LightningUNet3d(LightningModule):
         n_labels: int = 2,
         normalization: bool = True,
         batch_size: int = 1,
-        show_plots: bool = False
+        show_plots: bool = False,
     ):
         super().__init__()
-        self.unet = UNet3d(
-            initial_features, depth=depth, n_labels=n_labels, normalization=normalization
-        )
+        self.unet = UNet3d(initial_features, depth=depth, n_labels=n_labels, normalization=normalization)
         self.batch_size = batch_size
         self.show_plots = show_plots
 
@@ -47,14 +45,15 @@ class LightningUNet3d(LightningModule):
         target = batch["label"][tio.DATA]
         target = F.interpolate(target, size=(128, 128, 128))
         prediction = self(img)
-        if self.show_plots and int(batch_idx) % 125 == 0:
-            visualize(img, target, prediction)
+        if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 125 == 0:
+            slices = BrainSlices(img, target, prediction)
+            slices.visualize()
         loss = F.binary_cross_entropy_with_logits(prediction, target)
         tensorboard_logs = {"train_loss": loss}
         return {"loss": loss, "log": tensorboard_logs}
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.001)
+        return torch.optim.Adam(self.parameters(), lr=0.01)
 
     def train_dataloader(self):
         print(f"{ctime()}:  Creating Dataset...")

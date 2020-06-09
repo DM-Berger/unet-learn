@@ -71,5 +71,5 @@ def get_args() -> Dict[str, Any]:
         "epochs_max": delist(args.epochs_max),
         "resume": delist(args.resume),
         "checkdir": delist(args.checkdir),
-        "plots": delist(args.plot)
+        "plot": delist(args.plot),
     }
