@@ -51,24 +51,17 @@ class UNet3d(nn.Module):
         non-downsampling convolution within an encoding or decoding block.
     """
 
-    def __init__(
-        self,
-        initial_features: int = 32,
-        n_labels: int = 2,
-        depth: int = 3,
-        normalization: bool = True,
-    ):
+    def __init__(self, initial_features: int = 32, n_labels: int = 2, depth: int = 3, normalization: bool = True):
         super().__init__()
         self.encoder = Encoder(initial_features, depth, normalization)
         self.joiner = JoinBlock(self.encoder, normalization)
         self.decoder = Decoder(self.encoder, normalization)
         self.segmenter = Conv3d(in_channels=2 * initial_features, out_channels=n_labels, kernel_size=1, stride=1)
-        self.sigmoid = Sigmoid()
+        # use torch.nn.BCEWithLogitsLoss instead of sigmoid activation here
 
     def forward(self, x: Tensor) -> Tensor:
         x, skips = self.encoder(x)
         x = self.joiner(x)
         x = self.decoder(x, skips)
         x = self.segmenter(x)
-        x = self.sigmoid(x)
         return x

@@ -1,5 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 import torch as t
 
 from collections import OrderedDict
@@ -99,77 +100,61 @@ class BrainSlices:
             "3/4": [f"[{quarts3_4[0]},:,:]", f"[:,{quarts3_4[1]},:]", f"[:,:,{quarts3_4[2]}]"],
         }
 
-    def visualize(self) -> None:
-        mids = self.mids
-        nrows, ncols = 3, 3  # one row for each slice position
-        n_images = 9  # hardcode for now
-        # all_trues, all_targets, all_targets_bin, all_preds, all_preds_bin = [], [], [], [], []
+    def visualize(self, batch_idx: int, epoch: int, outdir: Path = None) -> None:
+        nrows, ncols = 3, 1  # one row for each slice position
         all_trues, all_targets, all_preds = [], [], []
         for i in range(3):  # We want this first so middle images are middle
             for j, position in enumerate(self.slice_positions):
                 img, target = self.imgs[position][i], self.targets[position][i]
                 prediction = self.preds[position][i]
-                # true = img + target
-                # pred = img + prediction
                 all_trues.append(img)
                 all_targets.append(target)
-                # all_targets_bin.append(np.array(target > 0.5, dtype=np.int64))
                 all_preds.append(prediction)
-                # all_preds_bin.append(np.array(prediction > 0.5, dtype=np.int64))
         fig: Figure
         axes: Axes
-        fig, axes = plt.subplots(nrows=4, ncols=1, sharex=False, sharey=False)
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=False)
         true = np.concatenate(all_trues, axis=1)
         target = np.concatenate(all_targets, axis=1)
-        # target_bin = np.concatenate(all_targets_bin, axis=1)
         pred = np.concatenate(all_preds, axis=1)
-        # pred_bin = np.concatenate(all_preds_bin, axis=1)
+        # convert to logits, since we are using BCEWithLogitsLoss. That is,
+        # BDEWithLogitsLoss handles the sigmoid + loss internally to avoid
+        # imprecision issues, but then this means the output of our network
+        # never *actually* passes through a sigmoid. So we do that here.
+        pred = t.sigmoid(t.tensor(pred)).numpy()
 
-        """The problem here is that, after augmentation, our masks are complicated
-        arrays of floats, with the maximum being 1.0, and the minimum being 0.0.
+        # Consistently apply colormap since images are standardized but still
+        # vary considerably in maximum and minimum values
+        true_args = dict(vmin=0.0, vmax=5.0, cmap="gray")
+        mask_args = dict(vmin=0.0, vmax=1.0, cmap="gray", alpha=0.5)
 
-        This makes sense, because when augmenting a mask, you are going to have
-        interpolation errors / uncertainties. The only way for augmentation not
-        to introduce excessive error is to actaully treat the masks as array of
-        floats that correspond to probabilities, based on the original masks.
-
-        We can get around this by cheating with the `alpha` argument of
-        matplotlib, which, if an array, works pixel-by-pixel.
-        """
-        axes[0].imshow(true * target, cmap="inferno")
+        axes[0].imshow(true, **true_args)
+        axes[0].imshow(target, **mask_args)
         axes[0].set_title("Actual Brain Tissue (probability)")
         axes[0].set_xticks([])
         axes[0].set_yticks([])
-        # axes[0].imshow(target, cmap="inferno", alpha=0.5)
-        axes[1].imshow(true * pred, cmap="inferno")
+
+        axes[1].imshow(true, **true_args)
+        axes[1].imshow(pred, **mask_args)
         axes[1].set_title("Predicted Brain Tissue (probability)")
         axes[1].set_xticks([])
         axes[1].set_yticks([])
 
-        axes[2].imshow(true * np.round(target), cmap="inferno")
-        axes[2].set_title("Actual Brain Tissue (binary)")
+        axes[2].imshow(true * np.array(pred > 0.5, dtype=float), **true_args)
+        axes[2].set_title("Predicted Brain Tissue (binary)")
         axes[2].set_xticks([])
         axes[2].set_yticks([])
-        # axes[0].imshow(target, cmap="inferno", alpha=0.5)
-        axes[3].imshow(true * np.round(pred), cmap="inferno")
-        axes[3].set_title("Predicted Brain Tissue (binary)")
-        axes[3].set_xticks([])
-        axes[3].set_yticks([])
+
         fig.tight_layout(h_pad=0)
         fig.subplots_adjust(hspace=0.0, wspace=0.0)
-        # axes[1].imshow(pred, cmap="inferno", alpha=0.5)
 
-        # both = np.concatenate([true, pred], axis=1)
+        if outdir is None:
+            plt.show()
+        else:
+            fig.set_size_inches(w=10, h=6)
+            os.makedirs(outdir, exist_ok=True)
+            plt.savefig(outdir / f"epoch{epoch}_batch{batch_idx}.png", dpi=200)
+            plt.close()
 
-        # axes[i][j].imshow(both, cmap="inferno", label="img")
-        # axes[i][j].set_title("")
-        # axes[i][j].set_xlabel(self.labels[position][i])
-        # fig.suptitle("True (top) vs. Predicted (right)")
-        plt.show()
 
-
-# def tboard_img_summary(img: Tensor, target: Tensor, prediction: Tensor) -> Any:
-#     mids, slices = get_slices(img, target, prediction)
-#     for i, (img, target, pred) in enumerate(zip(slices["img"], slices["target"], slices["pred"])):
-#         masked_true = img + target
-#         masked_pred = img + pred
+def tboard_img_summary(img: Tensor, target: Tensor, prediction: Tensor) -> Any:
+    raise NotImplementedError()

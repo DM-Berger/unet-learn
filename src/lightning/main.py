@@ -45,10 +45,13 @@ class LightningUNet3d(LightningModule):
         target = batch["label"][tio.DATA]
         target = F.interpolate(target, size=(128, 128, 128))
         prediction = self(img)
-        if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 125 == 0:
+        # brain = len(target > 0.5)
+        if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 15 == 0:
+            # if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 125 == 0:
             slices = BrainSlices(img, target, prediction)
-            slices.visualize()
-        loss = F.binary_cross_entropy_with_logits(prediction, target)
+            slices.visualize(int(batch_idx), self.current_epoch, outdir=Path.home() / "Desktop" / "trainlearn")
+        criterion = torch.nn.BCEWithLogitsLoss(reduction="sum")  # doesn't matter for batch size
+        loss = criterion(prediction, target)
         tensorboard_logs = {"train_loss": loss}
         return {"loss": loss, "log": tensorboard_logs}
 
