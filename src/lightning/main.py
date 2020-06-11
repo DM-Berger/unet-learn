@@ -15,7 +15,7 @@ from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 from warnings import filterwarnings
 
-from lightning.log import BrainSlices
+from lightning.log import log_all_info
 from model.unet import UNet3d
 from train.augment import compose_transforms
 from train.load import COMPUTE_CANADA, IN_COMPUTE_CAN_JOB, get_cc539_subjects
@@ -26,15 +26,19 @@ class LightningUNet3d(LightningModule):
         self,
         initial_features: int = 32,
         depth: int = 3,
+        kernel_size: int = 3,
         n_labels: int = 2,
         normalization: bool = True,
         batch_size: int = 1,
         show_plots: bool = False,
     ):
         super().__init__()
-        self.unet = UNet3d(initial_features, depth=depth, n_labels=n_labels, normalization=normalization)
+        self.unet = UNet3d(
+            initial_features, kernel_size=kernel_size, depth=depth, n_labels=n_labels, normalization=normalization
+        )
         self.batch_size = batch_size
         self.show_plots = show_plots
+        # self.save_hyperparameters("initial_features", "kernel_size", "depth", "n_labels", "normalization")
 
     def forward(self, x: Tensor) -> Tensor:
         return self.unet.forward(x)
@@ -46,10 +50,8 @@ class LightningUNet3d(LightningModule):
         target = F.interpolate(target, size=(128, 128, 128))
         prediction = self(img)
         # brain = len(target > 0.5)
-        if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 15 == 0:
-            # if int(batch_idx) != 0 and self.show_plots and int(batch_idx) % 125 == 0:
-            slices = BrainSlices(img, target, prediction)
-            slices.visualize(int(batch_idx), self.current_epoch, outdir=Path.home() / "Desktop" / "trainlearn")
+        if self.global_step != 0 and self.global_step % 25 == 0:
+            log_all_info(self, img, target, prediction, batch_idx)
         criterion = torch.nn.BCEWithLogitsLoss(reduction="sum")  # doesn't matter for batch size
         loss = criterion(prediction, target)
         tensorboard_logs = {"train_loss": loss}

@@ -20,29 +20,12 @@ def bool_parse(string: str) -> bool:
 # just a helper
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="ComputeCanada arguments")
-    parser.add_argument(
-        "-l", "--logs", metavar="<logging directory>", type=res, nargs=1, action="store"
-    )
-    parser.add_argument(
-        "-g", "--gpus", metavar="<gpus>", type=int, nargs=1, action="store", default=1
-    )
-    parser.add_argument(
-        "-c", "--checkdir", metavar="<checkpoint directory>", type=res, nargs=1, action="store"
-    )
-    parser.add_argument(
-        "--epochs-min", metavar="<min epochs>", type=int, nargs=1, action="store", default=1
-    )
-    parser.add_argument(
-        "--epochs-max", metavar="<max epochs>", type=int, nargs=1, action="store", default=10
-    )
-    parser.add_argument(
-        "--resume",
-        metavar="<checkpoint.cpkt file>",
-        type=res,
-        nargs=1,
-        action="store",
-        default=None,
-    )
+    parser.add_argument("-l", "--logs", metavar="<logging directory>", type=res, nargs=1, action="store")
+    parser.add_argument("-g", "--gpus", metavar="<gpus>", type=int, nargs=1, action="store", default=1)
+    parser.add_argument("-c", "--checkpoints", metavar="<checkpoint directory>", type=res, nargs=1, action="store")
+    parser.add_argument("--epochs-min", metavar="<min epochs>", type=int, nargs=1, action="store", default=1)
+    parser.add_argument("--epochs-max", metavar="<max epochs>", type=int, nargs=1, action="store", default=10)
+    parser.add_argument("--resume", metavar="<checkpoint.cpkt file>", type=res, nargs=1, action="store", default=None)
     # 'store_true' means default is false, i.e. "on flag present, action is: store TRUE"
     parser.add_argument("--half", action="store_true")
     parser.add_argument("--overfit", action="store_true")
@@ -70,6 +53,6 @@ def get_args() -> Dict[str, Any]:
         "epochs_min": delist(args.epochs_min),
         "epochs_max": delist(args.epochs_max),
         "resume": delist(args.resume),
-        "checkdir": delist(args.checkdir),
+        "checkpoints": delist(args.checkpoints),
         "plot": delist(args.plot),
     }

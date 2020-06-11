@@ -104,16 +104,16 @@ def test_lightning() -> None:
     IS_OVERFIT = args["overfit"]
     LOCAL = args["local"]
     SHOW_PLOTS = False if not LOCAL else args["plot"]
-    CHECKDIR = Path() if LOCAL else args["checkdir"]
-    CHECKPOINT = args["resume"]
+    CHECKDIR = Path() if LOCAL else Path(args["checkpoints"])
+    RESUME = args["resume"]
 
     filterwarnings("ignore", message="Image.*has negative values.*")
-    model = LightningUNet3d(
-        initial_features=8, depth=3, n_labels=1, batch_size=1, show_plots=SHOW_PLOTS
-    )
+    model = LightningUNet3d(initial_features=8, n_labels=1, depth=3, kernel_size=5, batch_size=1, show_plots=SHOW_PLOTS)
     # https://www.tensorflow.org/api_docs/python/tf/summary
     # **kwargs for SummarWriter constructor defined at
     # https://www.tensorflow.org/api_docs/python/tf/summary/create_file_writer
+    if not Path(LOGS).resolve().exists():
+        os.makedirs(LOGS, exist_ok=True)
     logger = get_logger(LOGS)
     callbacks = [checkpointer(CHECKDIR, prefix="unet", monitor="train_loss")]
     # trainer = Trainer(amp_level="O1", precision=16, fast_dev_run=True, gpus=1,
@@ -128,7 +128,7 @@ def test_lightning() -> None:
             max_epochs=EPOCHS_MAX,
             fast_dev_run=IS_DEV,
             overfit_pct=0.01 if IS_OVERFIT else 0.0,
-            resume_from_checkpoint=CHECKPOINT,
+            resume_from_checkpoint=RESUME,
             progress_bar_refresh_rate=1 - int(IN_COMPUTE_CAN_JOB or COMPUTE_CANADA),
             logger=logger,
             callbacks=callbacks,
