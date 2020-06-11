@@ -11,16 +11,16 @@ class EncodeBlock(nn.Module):
     """The downward / encoding layers of the U-Net"""
 
     def __init__(
-        self, features_out: int, depth: int, normalization: bool = True, is_input: bool = False
+        self, features_out: int, depth: int, kernel_size: int = 3, normalization: bool = True, is_input: bool = False
     ):
         super().__init__()
         norm_first = not is_input
         inch, ouch = self._in_out_channels(depth, features_out)
         self.conv0 = ConvUnit(
-            in_channels=inch[0], out_channels=ouch[0], normalization=norm_first, kernel_size=3
+            in_channels=inch[0], out_channels=ouch[0], normalization=norm_first, kernel_size=kernel_size
         )
         self.conv1 = ConvUnit(
-            in_channels=inch[1], out_channels=ouch[1], normalization=normalization, kernel_size=3
+            in_channels=inch[1], out_channels=ouch[1], normalization=normalization, kernel_size=kernel_size
         )
         self.pool = MaxPool3d(kernel_size=2, stride=2)
 
@@ -32,9 +32,7 @@ class EncodeBlock(nn.Module):
         return x, skip
 
     @staticmethod
-    def _in_out_channels(
-        depth: int, features_out: int = 32
-    ) -> Tuple[Dict[int, int], Dict[int, int]]:
+    def _in_out_channels(depth: int, features_out: int = 32) -> Tuple[Dict[int, int], Dict[int, int]]:
         """Abstract counting logic. Returns dicts in_ch, out_ch."""
         if depth == 0:  # input layer
             in0 = 1
@@ -46,7 +44,7 @@ class EncodeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, features_out: int = 32, depth: int = 3, normalization: bool = True):
+    def __init__(self, features_out: int = 32, depth: int = 3, kernel_size: int = 3, normalization: bool = True):
         """Build the encoding side (downward convolution portion, left side of the U).
 
         Parameters
@@ -60,6 +58,12 @@ class Encoder(nn.Module):
             How deep the U-Net should be, not including the bottom layer (e.g.
             layer without skip connections). The classic Ronnberger 3D U-Net
             thus has depth 3.
+
+        kernel_size: int
+            Size of kernel in double convolutional blocks.
+
+        normalization: bool
+            If True (default), include GroupNormalization3D in convolution blocks.
         """
         super().__init__()
         self.depth_ = depth
@@ -67,9 +71,7 @@ class Encoder(nn.Module):
         self.blocks = nn.ModuleList()
 
         for d in range(depth):
-            self.blocks.append(
-                EncodeBlock(features_out=f, depth=d, normalization=True, is_input=(d == 0))
-            )
+            self.blocks.append(EncodeBlock(features_out=f, depth=d, kernel_size=kernel_size, normalization=True, is_input=(d == 0)))
 
     def forward(self, x: Tensor) -> Tuple[Tensor, List[Tensor]]:
         skips: List[Tensor] = []

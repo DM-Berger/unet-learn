@@ -17,15 +17,15 @@ class DecodeBlock(nn.Module):
     Note that almost all the params of the decoder are dependent on those chosen for
     the Encoder. We can use this to our advantage in construction."""
 
-    def __init__(self, encoder: Encoder, depth: int, normalization: bool = True):
+    def __init__(self, encoder: Encoder, depth: int, normalization: bool = True, kernel_size: int = 3):
         super().__init__()
         inch, ouch, upch = self._in_out_channels(depth, encoder.features_out)
         self.upconv = UpConv3d(in_channels=upch, out_channels=upch, kernel_size=2, stride=2)
         self.conv0 = ConvUnit(
-            in_channels=inch[0], out_channels=ouch[0], normalization=normalization
+            in_channels=inch[0], out_channels=ouch[0], normalization=normalization, kernel_size=kernel_size
         )
         self.conv1 = ConvUnit(
-            in_channels=inch[1], out_channels=ouch[1], normalization=normalization
+            in_channels=inch[1], out_channels=ouch[1], normalization=normalization, kernel_size=kernel_size
         )
 
     def forward(self, x: Tensor, skip: Tensor) -> Tensor:
@@ -51,9 +51,7 @@ class DecodeBlock(nn.Module):
         return cropped
 
     @staticmethod
-    def _in_out_channels(
-        depth: int, features_out: int = 32
-    ) -> Tuple[Dict[int, int], Dict[int, int], int]:
+    def _in_out_channels(depth: int, features_out: int = 32) -> Tuple[Dict[int, int], Dict[int, int], int]:
         """Abstract counting logic. Returns dicts in_ch, out_ch. Assumes an incoming skip connection.
 
         Parameters
@@ -74,14 +72,30 @@ class DecodeBlock(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, encoder: Encoder, normalization: bool = True):
+    def __init__(self, encoder: Encoder, kernel_size: int = 3, normalization: bool = True):
+        """Abstract counting logic. Returns dicts in_ch, out_ch. Assumes an incoming skip connection.
+
+        Parameters
+        ----------
+        encoder: Encoder
+            The Encoder to be decoded.
+
+        kernel_size: int
+            The size of the kernel for the internal convolutional units.
+
+        normaliation: bool
+            If True (default) apply GroupNormalization3D in convolution units.
+
+        depth: int
+            depth == 0 is the last decoding block (e.g. top right of U-Net)
+        """
         super().__init__()
         self.depth_ = encoder.depth_
         self.features_out = encoder.features_out
 
         self.blocks = nn.ModuleList()
         for depth in reversed(range(self.depth_)):
-            self.blocks.append(DecodeBlock(encoder, depth, normalization))
+            self.blocks.append(DecodeBlock(encoder, depth, normalization, kernel_size))
 
     def forward(self, x: Tensor, skips: List[Tensor]) -> Tensor:
         for skip, decode in zip(skips, self.blocks):

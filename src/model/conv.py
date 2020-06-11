@@ -23,8 +23,9 @@ class ConvUnit(nn.Module):
     ):
         super().__init__()
         # block = nn.ModuleList()
-        # self.conv = Conv3d(in_channels, out_channels, kernel_size, padding=(kernel_size + 1) // 2)
-        self.conv = Conv3d(in_channels, out_channels, kernel_size, padding=1)
+        # works for kernel size 5 and 3 at least
+        self.conv = Conv3d(in_channels, out_channels, kernel_size, padding=(kernel_size + 1) // 2 - 1)
+        # self.conv = Conv3d(in_channels, out_channels, kernel_size, padding=1)
         self.gnorm = GroupNorm(num_groups=1, num_channels=out_channels)
         self.act = ReLU(inplace=True)
         # block.extend([conv, gnorm, act])
