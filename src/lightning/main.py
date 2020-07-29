@@ -71,3 +71,23 @@ class LightningUNet3d(LightningModule):
 
     def prepare_data(self):
         transform = compose_transforms()
+
+
+def binary_dice(pred: Tensor, target: Tensor, eps=1e-9) -> torch.float:
+    """NOTE: Must copy to CPU, so expensive. Should not be peformed every global step."""
+    p, t = pred.cpu().detach().view(-1), target.cpu().detach().view(-1)
+    intersect = (t * p).sum()
+    return torch.true_divide(2 * intersect, t.sum() + p.sum() + eps)
+
+
+def dice_loss(pred: Tensor, target: Tensor, smooth: float = 1.0, eps=1e-9) -> Tensor:
+    """See https://github.com/pytorch/pytorch/issues/1249
+
+    Parameters
+    ----------
+    smooth: float
+        Regularization term. Set to zero for no regularization.
+    """
+    p, t = pred.view(-1), t.view(-1)
+    intersect = (t * p).sum()
+    return 1 - ((2.0 * intersect + smooth))

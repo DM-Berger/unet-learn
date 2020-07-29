@@ -17,15 +17,9 @@ def checkpointer(checkdir: Path, prefix: str, monitor: str = "train_loss") -> Mo
         Quanitity to monitor
     """
     suffix = "{epoch}__{train_loss:.3f}-{val_less:.3f}"
-    fullpath = checkdir.resolve() / prefix
+    fullpath = Path(checkdir).resolve() / prefix
     filepath = str(fullpath) + suffix
 
     return ModelCheckpoint(
-        filepath=filepath,
-        monitor=monitor,
-        verbose=True,
-        save_top_k=3,
-        mode="auto",
-        save_weights_only=False,
-        period=1,
+        filepath=filepath, monitor=monitor, verbose=True, save_top_k=3, mode="auto", save_weights_only=False, period=1
     )
